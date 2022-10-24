@@ -2,6 +2,7 @@ import React, { FunctionComponent, useEffect, useMemo, useState } from "react";
 import ReactDOM, { createPortal } from "react-dom";
 import { css } from "@emotion/css";
 import { Product } from "./model";
+import { useAttributes, useProduct } from "./hooks";
 
 const Product: FunctionComponent<{ post: Element }> = ({ post }) => {
   const [position, setPosition] = useState({
@@ -10,21 +11,8 @@ const Product: FunctionComponent<{ post: Element }> = ({ post }) => {
   });
   const [active, setActive] = useState(false);
   const [hover, setHover] = useState(false);
-  const product = useMemo<Product>(() => {
-    const root = post.parentElement!.parentElement!;
-    const images = Array.from(root.querySelectorAll<HTMLImageElement>("img.x1ey2m1c.xds687c.x5yr21d.x10l6tqk.x17qophe.x13vifvy.xh8yej3")).map(img => img.src);
-    const content = root.querySelector<HTMLDivElement>(".x193iq5w.xeuugli.x13faqbe.x1vvkbs.xlh3980.xvmahel.x1n0sxbx.x1lliihq.x1s928wv.xhkezso.x1gmr53x.x1cpjm7i.x1fgarty.x1943h6x.x4zkp8e.x3x7a5m.x6prxxf.xvq8zen.xo1l8bm.xzsf02u.x1yc453h")!;
-    const viewMore = content.querySelector<HTMLButtonElement>(".x1i10hfl.xjbqb8w.x6umtig.x1b1mbwd.xaqea5y.xav7gou.x9f619.x1ypdohk.xt0psk2.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x16tdsg8.x1hl2dhg.xggy1nq.x1a2a7pz.xt0b8zv.xzsf02u.x1s688f");
-    if (viewMore && viewMore.innerText === "Xem thêm") {
-      viewMore.click();
-    }
-    const description = content ? content.innerText : "";
-    return {
-      name: "",
-      description,
-      images
-    };
-  }, [post, active]);
+  const product = useProduct(post, active);
+  const attributes = useAttributes(product);
 
   return <div className={css({ position: "relative" })}>
     <div
@@ -63,7 +51,21 @@ const Product: FunctionComponent<{ post: Element }> = ({ post }) => {
       flexDirection: "column"
     })}>
       <h1>{product.name}</h1>
-      <p dangerouslySetInnerHTML={{ __html: product.description }}></p>
+      {Object.keys(attributes).map((key) => <div className={css({
+        padding: 8
+      })}>
+        <h3 className={css({
+          textTransform: "uppercase",
+          marginBottom: 4
+        })}>{key}</h3>
+        <textarea
+          rows={key === "description" ? 4 : 1}
+          className={css({
+            width: "100%",
+            borderRadius: 8,
+            boxSizing: "border-box"
+          })} value={attributes[key as keyof typeof attributes]} />
+      </div>)}
       <p className={css({
         display: "flex",
         overflowX: "auto"

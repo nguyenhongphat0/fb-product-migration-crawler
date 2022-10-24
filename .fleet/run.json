@@ -2,9 +2,9 @@
     "configurations": [
         {
           "type": "command",
-          "name": "Build extension",
+          "name": "Watch extension compiler",
           "program": "npm",
-          "args": ["run", "build"],
+          "args": ["run", "watch"],
         },
     ]
 }
