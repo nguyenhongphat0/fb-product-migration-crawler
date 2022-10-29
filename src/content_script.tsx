@@ -1,8 +1,8 @@
-import React, { FunctionComponent, useEffect, useMemo, useState } from "react";
+import React, { FunctionComponent, useEffect, useState } from "react";
 import ReactDOM, { createPortal } from "react-dom";
 import { css } from "@emotion/css";
-import { Product } from "./model";
-import { useAttributes, useProduct } from "./hooks";
+import { useAttributes, useProduct, useSaveProduct } from "./hooks";
+import useHotkeys from "@reecelucas/react-use-hotkeys";
 
 const Product: FunctionComponent<{ post: Element }> = ({ post }) => {
   const [position, setPosition] = useState({
@@ -12,14 +12,38 @@ const Product: FunctionComponent<{ post: Element }> = ({ post }) => {
   const [active, setActive] = useState(false);
   const [hover, setHover] = useState(false);
   const product = useProduct(post, active);
-  const attributes = useAttributes(product);
+  const initialAttributes = useAttributes(product);
+  const [attributes, setAttributes] = useState(initialAttributes);
+  useEffect(() => {
+    Object.keys(initialAttributes).forEach((k) => {
+      const key = k as keyof typeof initialAttributes;
+      if (!attributes[key] || (key === "description" && attributes.description.endsWith("Xem thêm"))) {
+        setAttributes(a => ({
+          ...a,
+          [key]: initialAttributes[key]
+        }));
+      }
+    });
+  }, [active]);
+  const save = useSaveProduct({
+    ...product,
+    ...attributes
+  });
+  useHotkeys("Escape", () => {
+    setActive(false);
+    setHover(false);
+  });
 
   return <div className={css({ position: "relative" })}>
     <div
-      onMouseMove={(e) => setPosition({
-        left: e.clientX,
-        top: e.clientY
-      })}
+      onMouseMove={(e) => {
+        if (!active) {
+          setPosition({
+            left: e.clientX,
+            top: e.clientY
+          });
+        }
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseOut={() => setHover(false)}
       onClick={() => setActive(a => !a)}
@@ -41,18 +65,47 @@ const Product: FunctionComponent<{ post: Element }> = ({ post }) => {
     {(active || hover) && createPortal(<div className={css({
       position: "fixed",
       zIndex: 1000,
-      left: position.left,
-      top: position.top,
+      left: position.left + 4,
+      top: position.top + 4,
       width: 300,
       backgroundColor: "whitesmoke",
       borderRadius: 8,
       boxShadow: "0 1px 2px var(--shadow-2)",
       display: "flex",
-      flexDirection: "column"
+      flexDirection: "column",
+      maxHeight: "50vh",
+      overflowY: "auto"
     })}>
-      <h1>{product.name}</h1>
-      {Object.keys(attributes).map((key) => <div className={css({
-        padding: 8
+      <div className={css({
+        display: "flex"
+      })}>
+        {Object.keys(attributes).filter(key => key.toLowerCase().includes("price")).map((key) => <div className={css({
+          margin: 8,
+          marginBottom: 0
+        })}>
+          <h3 className={css({
+            textTransform: "uppercase",
+            marginBottom: 4
+          })}>{key}</h3>
+          <input
+            type="number"
+            className={css({
+              width: "100%",
+              borderRadius: 8,
+              boxSizing: "border-box",
+              border: "1px solid #ccd0d5"
+            })}
+            value={attributes[key as keyof typeof attributes]}
+            onChange={e => setAttributes(a => ({
+              ...a,
+              [key]: e.target.value
+            }))}
+          />
+        </div>)}
+      </div>
+      {Object.keys(attributes).filter(key => !key.toLowerCase().includes("price")).map((key) => <div className={css({
+        margin: 8,
+        marginBottom: 0
       })}>
         <h3 className={css({
           textTransform: "uppercase",
@@ -64,15 +117,36 @@ const Product: FunctionComponent<{ post: Element }> = ({ post }) => {
             width: "100%",
             borderRadius: 8,
             boxSizing: "border-box"
-          })} value={attributes[key as keyof typeof attributes]} />
+          })}
+          value={attributes[key as keyof typeof attributes]}
+          onChange={e => setAttributes(a => ({
+            ...a,
+            [key]: e.target.value
+          }))}
+        />
       </div>)}
       <p className={css({
         display: "flex",
-        overflowX: "auto"
+        flex: "none",
+        overflowX: "auto",
+        marginBottom: 0
       })}>{product.images.map(image => <img className={css({
         maxHeight: 128,
         objectFit: "cover"
       })} key={image} src={image} />)}</p>
+      <button
+        onClick={save}
+        className={css({
+          backgroundColor: "#1877f2",
+          color: "white",
+          padding: "8px 12px",
+          fontWeight: "bold",
+          borderRadius: 8,
+          border: "none",
+          margin: 8
+        })}
+      >Save
+      </button>
     </div>, document.body)}
   </div>;
 };
